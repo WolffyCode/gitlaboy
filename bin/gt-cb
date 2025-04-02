@@ -14,7 +14,7 @@ if (!root) {
     return;
 }
 console.log(chalk.yellow(`当前用户为: ${config.baseConfig['gitUser-name']}`));
-const defaultBranches = ['develop', 'daily', 'release'];
+const defaultBranches = ['develop', 'release/15.4', 'release/15.3','feature/print-v4'];
 
 inquirer
     .prompt([{
@@ -57,11 +57,16 @@ inquirer
             customBranch,
             branchTag
         } = answers;
-        const selectedBranch = baseBranch === '其他分支' ? customBranch : baseBranch;
-        const userName = getConfig()?.baseConfig?.['gitUser-name'];
+
+        let selectedBranch = baseBranch === '其他分支' ? customBranch : baseBranch;
+        let newSelectedBranch=selectedBranch
+        if(['release/15.4','release/15.3'].includes(newSelectedBranch)){
+            newSelectedBranch = newSelectedBranch.replace('release/','develop_');
+        }
+        const userName = 'wangbkun'
         // 创建新分支
         const currentDate = getCurrentDate();
-        const newBranchName = `${selectedBranch}-${userName}-${branchType}-${currentDate}${branchTag ? '-' : ''}${branchTag}`;
+        const newBranchName = `${newSelectedBranch}-${userName}-${branchType}-${currentDate}${branchTag ? '-' : ''}${branchTag}`;
         createNewBranch(selectedBranch, newBranchName);
         console.log(chalk.green(`\n创建分支${newBranchName}成功!已为您自动切换！\n`))
     });
