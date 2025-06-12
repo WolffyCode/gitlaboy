@@ -17,7 +17,6 @@ if (!defaultAssigneeConfig.length) {
 const selectCommitCherryPickToTargetBranch = async () => {
     const branchName = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
     console.log(chalk.green(`将从当前分支 ${branchName} 进行挑选commit。`));
-    console.log(chalk.yellow(`当前用户为: ${config.baseConfig['gitUser-name']}`));
     const projectId = await getCurProjectId();
     // 先获得当前提交的前10条commit，存进一个列表
     const commits = await getCommits({ projectId, branchName, count: config?.cpListCount || 10 });
