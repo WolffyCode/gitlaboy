@@ -1,0 +1,145 @@
+#!/usr/bin/env node
+const inquirer = require('inquirer');
+const chalk = require('chalk');
+const { execSync } = require('child_process');
+const checkRoot = require('../utils/checkRoot');
+const getConfig = require('../utils/getConfig');
+const writeConfig = require('../utils/writeConfig');
+const { getCurProjectName } = require('../utils');
+const moment =require('moment');
+// 检查是否在git仓库根目录
+if (!checkRoot()) {
+    return;
+}
+
+// 检查是否有暂存的文件
+try {
+    const stagedFiles = execSync('git diff --cached --name-only', { encoding: 'utf8' }).trim();
+    if (!stagedFiles) {
+        console.log(chalk.yellow('没有暂存的文件，请先使用 git add 添加要提交的文件'));
+        return;
+    }
+    console.log(chalk.blue('暂存的文件:'));
+    console.log(stagedFiles);
+} catch (error) {
+    console.log(chalk.red('检查暂存文件时出错:', error.message));
+    return;
+}
+
+// 提交类型选项
+const commitTypes = [
+    { name: '✨ feat: 新功能', value: 'feat' },
+    { name: '🐛 fix: 修复bug', value: 'fix' },
+    { name: '📝 docs: 文档更新', value: 'docs' },
+    { name: '💄 style: 代码格式调整(不影响功能)', value: 'style' },
+    { name: '♻️ refactor: 重构代码', value: 'refactor' },
+    { name: '⚡ perf: 性能优化', value: 'perf' },
+    { name: '✅ test: 测试相关', value: 'test' },
+    { name: '🔧 chore: 构建过程或辅助工具的变动', value: 'chore' },
+    { name: '⏪ revert: 回滚', value: 'revert' }
+];
+
+inquirer
+    .prompt([
+        {
+            type: 'list',
+            name: 'type',
+            message: '选择提交类型:',
+            choices: commitTypes
+        },
+        {
+            type: 'input',
+            name: 'jira',
+            message: '输入jira (可选):',
+            validate: function(input) {
+                // 允许为空或者符合规范的scope
+                return input === '' || /^[a-zA-Z0-9\-_]+$/.test(input) || '范围只能包含字母、数字、连字符和下划线';
+            }
+        },
+        {
+            type: 'input',
+            name: 'subject',
+            message: '输入提交描述:',
+            validate: function(input) {
+                if (input.length === 0) {
+                    return '提交描述不能为空';
+                }
+                if (input.length > 50) {
+                    return '提交描述不应超过50个字符';
+                }
+                return true;
+            }
+        },
+        {
+            type: 'confirm',
+            name: 'confirm',
+            message: '确认提交?',
+            default: true
+        }
+    ])
+    .then(async(answers) => {
+        if (!answers.confirm) {
+            console.log(chalk.yellow('已取消提交'));
+            return;
+        }
+
+        const { type, jira, subject } = answers;
+        
+        // 构建提交信息
+        let commitMessage =`${type}: ` ;
+        if (jira) {
+            commitMessage += `${jira}_`;
+        }
+        commitMessage += `${subject}`;
+            
+        try {
+            // 执行git commit
+            console.log(chalk.blue(`\n提交信息:${commitMessage}`));
+            console.log(chalk.blue('\n正在提交...'));
+            execSync(`git commit -m "${commitMessage.replace(/"/g, '\\"')}"`, { stdio: 'inherit' });
+            console.log(chalk.green('\n✅ 提交成功!'));
+            // 获取提交hash
+            const commitHash = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+            // 获取当前项目名
+            const curProjectName =await getCurProjectName();
+            // 记录提交信息到本地文件
+            saveCommitRecord({
+                hash: commitHash,
+                message: commitMessage,
+                curProjectName:curProjectName
+            });
+  
+        } catch (error) {
+            console.log(chalk.red('❌ 提交失败:', error.message));
+        }
+    })
+    .catch((error) => {
+        console.log(chalk.red('发生错误:', error.message));
+    });
+
+// 保存提交记录到本地文件
+function saveCommitRecord(record) {
+    try {
+        console.log(chalk.blue('\n开始本地存储提交记录'));
+        // 获取配置文件
+        const config = getConfig();
+        // 
+        console.log(chalk.blue(record.curProjectName));
+        // 如果不存在数据结构则进行增补
+        if(!config.projectConfig[record.curProjectName].commitRecords){
+            config.projectConfig[record.curProjectName]. commitRecords=[]
+        }
+        // 创建提交记录
+        const commitRecord={
+            hash:record.hash,
+            message:record.message,
+            time:moment(Date.now()).format('YYYY-MM-DD HH:mm:ss')
+        }
+        // 增加提交记录
+        config.projectConfig[record.curProjectName].commitRecords.push(commitRecord);
+        // 写入提交记录
+        writeConfig(config,'📝 提交记录已经本地保存,请定期清理');
+    } catch (error) {
+        console.log(chalk.yellow(`警告: 保存提交记录失败: ${error.message}`));
+    }
+}

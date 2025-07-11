@@ -9,6 +9,7 @@
   "repository": {},
   "homepage": "https://github.com/Leochens/gitlaboy",
   "bin": {
+    "gt-commit": "bin/gt-commit",
     "gt-code": "bin/gt-code",
     "gt-cb": "bin/gt-cb",
     "gt-cp": "bin/gt-cp",
@@ -26,7 +27,8 @@
     "chalk": "^2.4.2",
     "commander": "^2.19.0",
     "download-git-repo": "^0.0.2",
-    "inquirer": "^6.2.2"
+    "inquirer": "^6.2.2",
+    "moment": "^2.30.1"
   },
   "author": "zhl",
   "license": "ISC"

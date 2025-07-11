@@ -14,7 +14,7 @@ if (!root) {
     return;
 }
 console.log(chalk.yellow(`当前用户为: ${config.baseConfig['gitUser-name']}`));
-const defaultBranches = ['develop', 'release/15.4', 'release/15.3','feature/print-v4'];
+const defaultBranches = ['develop','release/15.5', 'release/15.4'];
 
 inquirer
     .prompt([{
@@ -60,7 +60,7 @@ inquirer
 
         let selectedBranch = baseBranch === '其他分支' ? customBranch : baseBranch;
         let newSelectedBranch=selectedBranch
-        if(['release/15.4','release/15.3'].includes(newSelectedBranch)){
+        if(['release/15.5','release/15.4'].includes(newSelectedBranch)){
             newSelectedBranch = newSelectedBranch.replace('release/','develop_');
         }
         const userName = 'wangbkun'
