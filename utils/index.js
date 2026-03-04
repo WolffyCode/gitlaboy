@@ -1,6 +1,10 @@
-const Gitlab = require('@gitbeaker/rest').Gitlab;
 const chalk = require('chalk');
 const getConfig = require('./getConfig');
+const api = require('./gitlabInstance');
+const getMergeRequests = require('./getMergeRequests');
+const approveMergeRequest = require('./approveMergeRequest');
+const mergeMergeRequest = require('./mergeMergeRequest');
+const approveThenMergeRequest = require('./approveThenMergeRequest');
 const config = getConfig();
 const baseConfig = config.baseConfig || {};
 const projectConfig = config.projectConfig || {};
@@ -8,10 +12,6 @@ const {
     execSync,
     exec
 } = require('child_process');
-const api = new Gitlab({
-    host: baseConfig['gitUser-url'],
-    token: baseConfig['gitUser-privateToken'],
-});
 const createCherryPickBranch = async ({
     projectId,
     baseBranchName
@@ -47,6 +47,8 @@ const getCommits = async ({
 }
 const createMR = async ({
     assigneeName,
+    reviewerName,
+    mergerName,
     projectId,
     sourceBranch,
     targetBranch,
@@ -54,13 +56,21 @@ const createMR = async ({
     options = {},
     removeSourceBranch
 }) => {
-    const assigneeUser = await getUserByUserName(assigneeName)
-    const assigneeId = assigneeUser.id;
-    console.log(chalk.green(`根据用户名${assigneeName}查询到用户id为${assigneeId}`));
-    console.log(chalk.green(`合并 [${sourceBranch}] => [${targetBranch}] TITLE: ${title} 审核人为:${assigneeUser.name} `));
+    const finalReviewerName = reviewerName || assigneeName;
+    const finalMergerName = mergerName || assigneeName || reviewerName;
+    if (!finalReviewerName) throw new Error('审核人不能为空');
+    if (!finalMergerName) throw new Error('合并人不能为空');
+    const reviewerUser = await getUserByUserName(finalReviewerName);
+    const mergerUser = await getUserByUserName(finalMergerName);
+    const reviewerId = reviewerUser.id;
+    const assigneeId = mergerUser.id;
+    console.log(chalk.green(`根据用户名${finalReviewerName}查询到审核人id为${reviewerId}`));
+    console.log(chalk.green(`根据用户名${finalMergerName}查询到合并人id为${assigneeId}`));
+    console.log(chalk.green(`合并 [${sourceBranch}] => [${targetBranch}] TITLE: ${title} 审核人:${reviewerUser.name} 合并人:${mergerUser.name}`));
     const res = await api.MergeRequests.create(projectId, sourceBranch, targetBranch, title, {
         targetProjectId: projectId,
         assigneeId,
+        reviewerId,
         removeSourceBranch,
         ...options
     })
@@ -108,27 +118,15 @@ async function getCurProjectId() {
     if (!project) throw new Error('通过项目名称未找到项目id! 请使用 \n \t gt-regist \n 进行项目注册后再试');
     return project['gitUser-projectId'];
 }
-
-async function getMergeRequests({
-    assigneeName,
-    getMy
-}) {
-    // const API = customApi ?? api;
-    // const user = await getUserByUserName(assigneeName);
-    const mrs = await api.MergeRequests.all({
-        state: 'opened',
-        assigneeName: getMy ? undefined : assigneeName,
-        scope: getMy ? 'assigned_to_me' : undefined
-    });
-    return mrs;
-}
-async function mergeMr({ mergerequestIId, projectId, customApi }) {
-    const API = customApi ?? api;
+async function mergeMr({ mergerequestIId, projectId, customApi, options = {} }) {
     console.log(projectId, mergerequestIId)
-    return await API.MergeRequests.merge(projectId, mergerequestIId)
+    return mergeMergeRequest({ mergerequestIId, projectId, customApi, options });
 };
 module.exports = {
     gitlabInstance: api,
+    approveMergeRequest,
+    mergeMergeRequest,
+    approveThenMergeRequest,
     mergeMr,
     getMergeRequests,
     getCurProjectId,

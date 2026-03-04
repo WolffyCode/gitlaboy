@@ -1,0 +1,71 @@
+#!/usr/bin/env node
+const checkRoot = require('../utils/checkRoot');
+if (!checkRoot()) { return }
+
+const chalk = require('chalk');
+const inquirer = require('inquirer');
+const getConfig = require('../utils/getConfig');
+const { getMergeRequests, approveMergeRequest } = require('../utils');
+
+const statusMap = {
+    can_be_merged: '允许合并✅',
+    unchecked: '还未检查⏳',
+    checking: '检查中⏳',
+    cannot_be_merged: '冲突异常❌',
+    cannot_be_merged_recheck: '重复检查失败❌'
+};
+
+const renderMrChoice = (mr) => {
+    const status = statusMap[mr.merge_status] || mr.merge_status || '未知状态';
+    const role = mr.myRoleLabel || '未知角色';
+    const submitter = mr.submitter || mr?.author?.name || mr?.author?.username || '未知';
+    return {
+        value: mr,
+        name: `[${role}] ${status} [${mr.iid}] ${mr.title} | 提交人:${submitter} | ${mr.source_branch} => ${mr.target_branch} | ${mr.web_url}`
+    };
+};
+
+const run = async () => {
+    const config = getConfig();
+    const me = config?.baseConfig?.['gitUser-name'];
+    if (!me) {
+        console.log(chalk.red('未配置当前用户，请先执行 gt-init 或 gt-config'));
+        return;
+    }
+
+    console.log(chalk.green(`正在查询可审核MR（当前用户: ${me}）...`));
+    const mrs = await getMergeRequests({ operatorName: me });
+    if (!mrs?.length) {
+        console.log(chalk.yellow('暂无可操作MR（你不是审核人或合并人）'));
+        return;
+    }
+
+    const res = await inquirer.prompt([{
+        type: 'checkbox',
+        name: 'mrs',
+        pageSize: 12,
+        message: '多选需要审核通过的MR',
+        choices: mrs.map(renderMrChoice),
+        validate(value) {
+            if (value.length) return true;
+            return '请至少选择一条MR';
+        }
+    }]);
+
+    for (const mr of res.mrs) {
+        const submitter = mr.submitter || mr?.author?.name || mr?.author?.username || '未知';
+        try {
+            await approveMergeRequest({
+                projectId: mr.project_id,
+                mergerequestIId: mr.iid
+            });
+            console.log(chalk.green(`审核通过 [${mr.iid}] ${mr.title} | 提交人:${submitter}`));
+        } catch (e) {
+            console.log(chalk.red(`审核失败 [${mr.iid}] ${mr.title} | 提交人:${submitter}: ${e?.cause?.description || e?.message}`));
+        }
+    }
+};
+
+run().catch((e) => {
+    console.log(chalk.red(`执行失败: ${e?.cause?.description || e?.message}`));
+});

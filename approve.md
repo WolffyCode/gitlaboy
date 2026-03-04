@@ -1,0 +1,17 @@
+curl 'https://git.yyrd.com/api/v4/projects/27218/merge_requests/18/approve' \
+  -X 'POST' \
+  -H 'accept: application/json, text/plain, */*' \
+  -H 'accept-language: zh-CN,zh;q=0.9' \
+  -H 'content-length: 0' \
+  -H 'cookie: sidebar_collapsed=false; event_filter=all; tenant_info=0000; known_sign_in=UHkwVDdkMERvY2ZnRDc5THIwNmZpUnhUYjV2dXFsNHRpa0xQVHh1V2NTN1F5bXJNOU5lbFFFMEZtQ0J2bmM4aGVHRGhnRHNsMld2VjNlbEc0RFdhOFZlMUx1ODlHZHU0Ym01UUFyeXRQODRYTWFGd2NYeUlsV3JYRlNSNk1NeGctLXVZMmdrUTMrVXUzckZkS0NBRjY0QVE9PQ%3D%3D--cb69232b95edaac1697bbdbcfa53a9d805483545; _gitlab_session=983a854a71c583f614fa19925037c924; diff_view=parallel; ycap_06e6ea000524=eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ7XCJhaWRcIjpcIjAwMDAxMjEwNjhcIixcInVzZXJDb2RlXCI6XCJ3YW5nYmt1blwiLFwidXNlck5hbWVcIjpcIueOi-eCs-WdpFwifSIsImlhdCI6MTc3MjU4NjA3NywiZXhwIjoxNzcyNjI5Mjc3fQ.4RDkR6kkDHA1ttOLMjMaxTc95DcE123OFjaYvYFSJxAkKSesqT9jkupbxRkPsQ3VS8FjDu-k4J6Gh3ExJAXXoA; yht_access_token=bttK0Fwc2JHNEJlTjFMSjVWblJqQVhPaVdpMVhocWkzRHkwLzM5bUFoVTVkcC9hV1ZycXo4a0p4OS9Ec0xiQUVET19fZXVjLnlvbnlvdWNsb3VkLmNvbQ..' \
+  -H 'origin: https://git.yyrd.com' \
+  -H 'referer: https://git.yyrd.com/yonyou-mdf/function-script-store/-/merge_requests/18' \
+  -H 'sec-ch-ua: "Chromium";v="123", "Not:A-Brand";v="8"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 QQBrowser/20.1.0.211' \
+  -H 'x-csrf-token: Qw9GkXOZSnbIU+obgt1puDBtN/YPkbeKtPzT+piyJkINpN79cokchJwzstQYxNbvcJgjeqZf82MofUF4Xk4aZw==' \
+  -H 'x-requested-with: XMLHttpRequest'

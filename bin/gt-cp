@@ -11,8 +11,12 @@ const getConfig = require('../utils/getConfig');
 const config = getConfig();
 const defaultBranchConfig = config.defaultBranchConfig ?? [];
 const defaultAssigneeConfig = config.defaultAssigneeConfig ?? [];
-if (!defaultAssigneeConfig.length) {
-    console.log('当前未配置默认审核人,建议使用 gt-config 配置默认审核人提高效率！');
+const userConfig = config.userConfig || {};
+const defaultUserList = [...new Set([...defaultAssigneeConfig, ...Object.keys(userConfig)])];
+const OTHER_REVIEWER = '其他审核人';
+const OTHER_MERGER = '其他合并人';
+if (!defaultUserList.length) {
+    console.log('当前未配置常用人员,建议使用 gt-config 配置用户和审核人提高效率！');
 }
 const selectCommitCherryPickToTargetBranch = async () => {
     const branchName = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
@@ -44,25 +48,16 @@ const selectCommitCherryPickToTargetBranch = async () => {
         },
         {
             type: 'list',
-            name: 'assignee',
+            name: 'reviewerSelect',
             message: '选择审核人',
-            required: true,
-            when: () => defaultAssigneeConfig.length > 0,
-            choices: [...defaultAssigneeConfig, new inquirer.Separator(), '其他审核人'],
-            validate: function (value) {
-                if (value.length) {
-                    return true;
-                } else {
-                    return '审核人不能为空,请重新选择。';
-                }
-            }
+            when: () => defaultUserList.length > 0,
+            choices: [...defaultUserList, new inquirer.Separator(), OTHER_REVIEWER],
         },
         {
             type: 'input',
-            name: 'assignee',
+            name: 'reviewer',
             message: '输入审核人用户名',
-            required: true,
-            when: (ans) => ans.assignee === '其他审核人',
+            when: (ans) => defaultUserList.length === 0 || ans.reviewerSelect === OTHER_REVIEWER,
             validate: function (value) {
                 if (value.length) {
                     return true;
@@ -72,23 +67,31 @@ const selectCommitCherryPickToTargetBranch = async () => {
             }
         },
         {
+            type: 'list',
+            name: 'mergerSelect',
+            message: '选择合并人',
+            when: () => defaultUserList.length > 0,
+            choices: [...defaultUserList, new inquirer.Separator(), OTHER_MERGER],
+        },
+        {
             type: 'input',
-            name: 'assignee',
-            message: '输入审核人用户名',
-            required: true,
-            when: () => defaultAssigneeConfig.length === 0,
+            name: 'merger',
+            message: '输入合并人用户名',
+            when: (ans) => defaultUserList.length === 0 || ans.mergerSelect === OTHER_MERGER,
             validate: function (value) {
                 if (value.length) {
                     return true;
                 } else {
-                    return '审核人不能为空,请重新输入。';
+                    return '合并人不能为空,请重新输入。';
                 }
             }
         },
         ]).then(async (ans) => {
             // 基于用户选择的cp分支创建一个临时分支
-            let { commits, cpBranch, customBranch, assignee } = ans;
+            let { commits, cpBranch, customBranch, reviewer, reviewerSelect, merger, mergerSelect } = ans;
             if (cpBranch === '其他分支') cpBranch = customBranch;
+            const reviewerName = reviewer || reviewerSelect;
+            const mergerName = merger || mergerSelect;
             const reversedCommits = commits.reverse();
             // console.log(commits);
             let tempBranch;
@@ -100,7 +103,8 @@ const selectCommitCherryPickToTargetBranch = async () => {
                 // 如果成功 则将临时分支 创建合并到用户的cp分支的mr
                 const res = await createMR({
                     projectId,
-                    assigneeName: assignee,
+                    reviewerName,
+                    mergerName,
                     sourceBranch: tempBranch,
                     targetBranch: cpBranch,
                     title: commits[0]?.title,
