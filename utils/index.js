@@ -118,9 +118,9 @@ async function getCurProjectId() {
     if (!project) throw new Error('通过项目名称未找到项目id! 请使用 \n \t gt-regist \n 进行项目注册后再试');
     return project['gitUser-projectId'];
 }
-async function mergeMr({ mergerequestIId, projectId, customApi, options = {} }) {
+async function mergeMr({ mergerequestIId, projectId, customApi, options = {}, mergeRequestSnapshot }) {
     console.log(projectId, mergerequestIId)
-    return mergeMergeRequest({ mergerequestIId, projectId, customApi, options });
+    return mergeMergeRequest({ mergerequestIId, projectId, customApi, options, mergeRequestSnapshot });
 };
 module.exports = {
     gitlabInstance: api,

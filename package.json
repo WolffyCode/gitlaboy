@@ -17,7 +17,6 @@
     "gt-approve": "bin/gt-approve",
     "gt-merge": "bin/gt-merge",
     "gt-approve-merge": "bin/gt-approve-merge",
-    "gt-rv": "bin/gt-review",
     "gt-init": "bin/gt-init",
     "gt-regist": "bin/gt-regist",
     "gt-list": "bin/gt-list",

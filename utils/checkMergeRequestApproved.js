@@ -73,9 +73,60 @@ async function readApprovalByMergeStatus(API, projectId, mergerequestIId) {
     return null;
 }
 
-async function checkMergeRequestApproved({ projectId, mergerequestIId, customApi }) {
+function readApprovalFromSnapshot(mergeRequestSnapshot) {
+    if (!mergeRequestSnapshot) return null;
+    const approvalsLeft = mergeRequestSnapshot?.approvals_left ?? mergeRequestSnapshot?.approvalsLeft;
+    if (typeof approvalsLeft === 'number') {
+        return {
+            approved: approvalsLeft <= 0,
+            method: 'snapshotApprovalsLeft',
+            approvalsLeft,
+        };
+    }
+    const approvalsRequired = mergeRequestSnapshot?.approvals_before_merge ?? mergeRequestSnapshot?.approvalsBeforeMerge;
+    const approvedBy = mergeRequestSnapshot?.approved_by ?? mergeRequestSnapshot?.approvedBy;
+    if (typeof approvalsRequired === 'number') {
+        if (approvalsRequired === 0) {
+            return {
+                approved: true,
+                method: 'snapshotApprovalsRequired',
+                approvalsRequired,
+                approvedCount: 0,
+            };
+        }
+        if (Array.isArray(approvedBy)) {
+            return {
+                approved: approvedBy.length >= approvalsRequired,
+                method: 'snapshotApprovalsRequired',
+                approvalsRequired,
+                approvedCount: approvedBy.length,
+            };
+        }
+    }
+    const detailedMergeStatus = mergeRequestSnapshot?.detailed_merge_status ?? mergeRequestSnapshot?.detailedMergeStatus;
+    if (typeof detailedMergeStatus === 'string') {
+        return {
+            approved: detailedMergeStatus !== 'not_approved',
+            method: 'snapshotDetailedMergeStatus',
+            detailedMergeStatus,
+        };
+    }
+    const mergeStatus = mergeRequestSnapshot?.merge_status ?? mergeRequestSnapshot?.mergeStatus;
+    if (mergeStatus === 'can_be_merged') {
+        return {
+            approved: true,
+            method: 'snapshotMergeStatus',
+            mergeStatus,
+        };
+    }
+    return null;
+}
+
+async function checkMergeRequestApproved({ projectId, mergerequestIId, mergeRequestSnapshot, customApi }) {
     const API = customApi ?? api;
     let lastError;
+    const bySnapshot = readApprovalFromSnapshot(mergeRequestSnapshot);
+    if (bySnapshot) return bySnapshot;
 
     try {
         const byConfig = await readApprovalByConfiguration(API, projectId, mergerequestIId);

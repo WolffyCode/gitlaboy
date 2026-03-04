@@ -96,7 +96,6 @@ test('approveThenMergeRequest should approve first and then merge', async () => 
                 callOrder.push('approve');
                 return { approved: true };
             },
-            showConfiguration: async () => ({ approvals_left: 0 }),
         },
         MergeRequests: {
             merge: async () => {
@@ -114,6 +113,28 @@ test('approveThenMergeRequest should approve first and then merge', async () => 
 
     assert.deepEqual(callOrder, ['approve', 'merge']);
     assert.equal(res.state, 'merged');
+});
+
+test('mergeMergeRequest should allow fallback by MR snapshot when approval APIs are not available', async () => {
+    const calls = [];
+    const mockApi = {
+        MergeRequests: {
+            merge: async (projectId, mergerequestIId, options) => {
+                calls.push({ projectId, mergerequestIId, options });
+                return { state: 'merged' };
+            }
+        }
+    };
+    const res = await mergeMergeRequest({
+        projectId: 1001,
+        mergerequestIId: 10,
+        customApi: mockApi,
+        mergeRequestSnapshot: {
+            merge_status: 'can_be_merged'
+        }
+    });
+    assert.equal(res.state, 'merged');
+    assert.equal(calls.length, 1);
 });
 
 test('getMergeRequests should return MRs where I am reviewer or merger with role labels', async () => {

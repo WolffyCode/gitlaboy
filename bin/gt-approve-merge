@@ -57,7 +57,8 @@ const run = async () => {
         try {
             const mergeRes = await approveThenMergeRequest({
                 projectId: mr.project_id,
-                mergerequestIId: mr.iid
+                mergerequestIId: mr.iid,
+                mergeRequestSnapshot: mr
             });
             if (mergeRes?.state === 'merged') {
                 console.log(chalk.green(`审核并合并成功 [${mr.iid}] ${mr.title} | 提交人:${submitter}`));

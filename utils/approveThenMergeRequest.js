@@ -7,6 +7,7 @@ module.exports = async function approveThenMergeRequest({
     projectId,
     approveOptions = {},
     mergeOptions = {},
+    mergeRequestSnapshot,
     customApi
 }) {
     const API = customApi ?? api;
@@ -20,6 +21,8 @@ module.exports = async function approveThenMergeRequest({
         mergerequestIId,
         projectId,
         options: mergeOptions,
+        checkApproval: false,
+        mergeRequestSnapshot,
         customApi: API
     });
 };
